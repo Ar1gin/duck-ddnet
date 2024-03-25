@@ -218,7 +218,7 @@ void CNamePlates::RenderNameplatePos(vec2 Position, const CNetObj_PlayerInfo *pP
 		}
 	}
 
-	if((g_Config.m_Debug || g_Config.m_ClNameplatesStrong) && g_Config.m_ClNameplates)
+	if((g_Config.m_Debug || g_Config.m_ClNameplatesStrong || g_Config.m_DcDrawStats || g_Config.m_DcDrawDJ || g_Config.m_DcDrawHookD) && g_Config.m_ClNameplates)
 	{
 		bool Following = (m_pClient->m_Snap.m_SpecInfo.m_Active && !GameClient()->m_MultiViewActivated && m_pClient->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW);
 		if(m_pClient->m_Snap.m_LocalClientId != -1 || Following)
@@ -228,46 +228,183 @@ void CNamePlates::RenderNameplatePos(vec2 Position, const CNetObj_PlayerInfo *pP
 			const CGameClient::CSnapState::CCharacterInfo &Other = m_pClient->m_Snap.m_aCharacters[ClientId];
 			if(Selected.m_HasExtendedData && Other.m_HasExtendedData)
 			{
+				float StatAlpha = 1.0;
+				if(g_Config.m_ClNameplatesAlways == 0)
+					StatAlpha = clamp(1 - std::pow(distance(m_pClient->m_Controls.m_aTargetPos[g_Config.m_ClDummy], Position) / 200.0f, 16.0f), 0.0f, 1.0f);
+
+				if(OtherTeam && !ForceAlpha)
+					StatAlpha = g_Config.m_ClShowOthersAlpha / 100.0f;
+
+				StatAlpha *= Alpha;
+				ColorRGBA StatColor = ColorRGBA(1, 1, 1, StatAlpha);
+
 				if(SelectedId == ClientId)
 					TextRender()->TextColor(rgb);
 				else
 				{
+					const float StatImageSize = 32.0f;
 					float ScaleX, ScaleY;
-					const float StrongWeakImgSize = 40.0f;
-					Graphics()->TextureClear();
-					Graphics()->TextureSet(g_pData->m_aImages[IMAGE_STRONGWEAK].m_Id);
-					Graphics()->QuadsBegin();
-					ColorRGBA StrongWeakStatusColor;
-					int StrongWeakSpriteId;
-					if(Selected.m_ExtendedData.m_StrongWeakId > Other.m_ExtendedData.m_StrongWeakId)
+					RenderTools()->GetSpriteScale(SPRITE_HOOK_STRONG, ScaleX, ScaleY);
+
+					std::vector<std::pair<int, IGraphics::CTextureHandle>> stats_to_draw;
+
+					if(g_Config.m_DcDrawStats)
 					{
-						StrongWeakStatusColor = color_cast<ColorRGBA>(ColorHSLA(6401973));
-						StrongWeakSpriteId = SPRITE_HOOK_STRONG;
+						if(Other.m_ExtendedData.m_Flags & CHARACTERFLAG_MOVEMENTS_DISABLED)
+						{
+							stats_to_draw.push_back({SPRITE_HUD_LIVE_FROZEN, m_pClient->m_HudSkin.m_SpriteHudLiveFrozen});
+						}
+						if(Other.m_ExtendedData.m_FreezeEnd == -1)
+						{
+							stats_to_draw.push_back({SPRITE_HUD_DEEP_FROZEN, m_pClient->m_HudSkin.m_SpriteHudDeepFrozen});
+						}
+						if(Other.m_ExtendedData.m_Flags & CHARACTERFLAG_ENDLESS_HOOK)
+						{
+							stats_to_draw.push_back({SPRITE_HUD_ENDLESS_HOOK, m_pClient->m_HudSkin.m_SpriteHudEndlessHook});
+						}
+						if(Other.m_ExtendedData.m_Flags & CHARACTERFLAG_ENDLESS_JUMP)
+						{
+							stats_to_draw.push_back({SPRITE_HUD_ENDLESS_JUMP, m_pClient->m_HudSkin.m_SpriteHudEndlessJump});
+						}
+						if(Other.m_ExtendedData.m_Flags & CHARACTERFLAG_JETPACK)
+						{
+							stats_to_draw.push_back({SPRITE_HUD_JETPACK, m_pClient->m_HudSkin.m_SpriteHudJetpack});
+						}
+						if(Other.m_ExtendedData.m_Flags & CHARACTERFLAG_HOOK_HIT_DISABLED)
+						{
+							stats_to_draw.push_back({SPRITE_HUD_HOOK_HIT_DISABLED, m_pClient->m_HudSkin.m_SpriteHudHookHitDisabled});
+						}
+						if(Other.m_ExtendedData.m_Flags & CHARACTERFLAG_HAMMER_HIT_DISABLED)
+						{
+							stats_to_draw.push_back({SPRITE_HUD_HAMMER_HIT_DISABLED, m_pClient->m_HudSkin.m_SpriteHudHammerHitDisabled});
+						}
+						if(Other.m_ExtendedData.m_Flags & CHARACTERFLAG_COLLISION_DISABLED)
+						{
+							stats_to_draw.push_back({SPRITE_HUD_COLLISION_DISABLED, m_pClient->m_HudSkin.m_SpriteHudCollisionDisabled});
+						}
+						if(Other.m_ExtendedData.m_Flags & CHARACTERFLAG_TELEGUN_GUN)
+						{
+							stats_to_draw.push_back({SPRITE_HUD_TELEPORT_GUN, m_pClient->m_HudSkin.m_SpriteHudTeleportGun});
+						}
+						if(Other.m_ExtendedData.m_Flags & CHARACTERFLAG_TELEGUN_LASER)
+						{
+							stats_to_draw.push_back({SPRITE_HUD_TELEPORT_LASER, m_pClient->m_HudSkin.m_SpriteHudTeleportLaser});
+						}
+						if(Other.m_ExtendedData.m_Flags & CHARACTERFLAG_TELEGUN_GRENADE)
+						{
+							stats_to_draw.push_back({SPRITE_HUD_TELEPORT_GRENADE, m_pClient->m_HudSkin.m_SpriteHudTeleportGrenade});
+						}
 					}
-					else
+					bool drawStrong = g_Config.m_ClNameplatesStrong;
+
+					int XOffset = stats_to_draw.size() + drawStrong - 1;
+					if(stats_to_draw.size() > 0 || drawStrong)
+						YOffset -= StatImageSize;// * ScaleY;
+
+					if(drawStrong)
 					{
-						StrongWeakStatusColor = color_cast<ColorRGBA>(ColorHSLA(41131));
-						StrongWeakSpriteId = SPRITE_HOOK_WEAK;
+						Graphics()->TextureClear();
+						Graphics()->TextureSet(g_pData->m_aImages[IMAGE_STRONGWEAK].m_Id);
+						Graphics()->QuadsBegin();
+						ColorRGBA StrongWeakStatusColor;
+						int StrongWeakSpriteID;
+						if(Selected.m_ExtendedData.m_StrongWeakId > Other.m_ExtendedData.m_StrongWeakId)
+						{
+							StrongWeakStatusColor = color_cast<ColorRGBA>(ColorHSLA(6401973));
+							StrongWeakSpriteID = SPRITE_HOOK_STRONG;
+						}
+						else
+						{
+							StrongWeakStatusColor = color_cast<ColorRGBA>(ColorHSLA(41131));
+							StrongWeakSpriteID = SPRITE_HOOK_WEAK;
+						}
+						float ClampedAlpha = 1;
+						if(g_Config.m_ClNameplatesAlways == 0)
+							ClampedAlpha = clamp(1 - std::pow(distance(m_pClient->m_Controls.m_aTargetPos[g_Config.m_ClDummy], Position) / 200.0f, 16.0f), 0.0f, 1.0f);
+
+						if(OtherTeam && !ForceAlpha)
+							StrongWeakStatusColor.a = g_Config.m_ClShowOthersAlpha / 100.0f;
+						else
+							StrongWeakStatusColor.a = ClampedAlpha;
+
+						StrongWeakStatusColor.a *= Alpha;
+						Graphics()->SetColor(StrongWeakStatusColor);
+						RenderTools()->SelectSprite(StrongWeakSpriteID);
+						RenderTools()->GetSpriteScale(StrongWeakSpriteID, ScaleX, ScaleY);
+						TextRender()->TextColor(StrongWeakStatusColor);
+
+						RenderTools()->DrawSprite(Position.x - StatImageSize * XOffset * 0.5f, YOffset + (StatImageSize / 2.0f), StatImageSize / 0.7f);
+						Graphics()->QuadsEnd();
+						//YOffset -= StatImageSize * ScaleY;
+						XOffset -= 2;
 					}
+					// DClient Stats
+					if(g_Config.m_DcDrawStats)
+					{
+						for(size_t i = 0; i < stats_to_draw.size(); i++)
+						{
+							Graphics()->TextureClear();
+							Graphics()->TextureSet(stats_to_draw[i].second);
+							Graphics()->QuadsBegin();
+							Graphics()->SetColor(StatColor);
 
-					float ClampedAlpha = 1;
-					if(g_Config.m_ClNameplatesAlways == 0)
-						ClampedAlpha = clamp(1 - std::pow(distance(m_pClient->m_Controls.m_aTargetPos[g_Config.m_ClDummy], Position) / 200.0f, 16.0f), 0.0f, 1.0f);
+							//RenderTools()->SelectSprite(stats_to_draw[i].first);
+							//RenderTools()->GetSpriteScale(stats_to_draw[i].first, ScaleX, ScaleY);
+							//ScaleX = 1.0f;
+							//ScaleY = 1.0f;
 
-					if(OtherTeam && !ForceAlpha)
-						StrongWeakStatusColor.a = g_Config.m_ClShowOthersAlpha / 100.0f;
-					else
-						StrongWeakStatusColor.a = ClampedAlpha;
+							//RenderTools()->DrawSprite(Position.x - StatImageSize * ScaleX * XOffset * 0.5f, YOffset + (StatImageSize / 2.0f) * ScaleY, StatImageSize);
+							IGraphics::CQuadItem StatQuad(Position.x - StatImageSize * (XOffset + 1.0f) * 0.5f, YOffset, StatImageSize, StatImageSize);
+							Graphics()->QuadsDrawTL(&StatQuad, 1);
+							Graphics()->QuadsEnd();
+							XOffset -= 2;
+						}
+					}
+					if(g_Config.m_DcDrawDJ && !(Other.m_ExtendedData.m_Flags & CHARACTERFLAG_ENDLESS_JUMP))
+					{
+						int djs_used = clamp(Other.m_ExtendedData.m_JumpedTotal - 1, 0, 5);
+						int djs_left = clamp(Other.m_ExtendedData.m_Jumps - 1, 0, 5) - djs_used;
+						if(djs_used > 0 || djs_left > 0)
+							YOffset -= StatImageSize;
+						XOffset = djs_left + djs_used - 1;
+						if(djs_left > 0)
+						{
+							Graphics()->TextureClear();
+							Graphics()->TextureSet(m_pClient->m_HudSkin.m_SpriteHudAirjump);
+							Graphics()->QuadsBegin();
+							Graphics()->SetColor(StatColor);
 
-					StrongWeakStatusColor.a *= Alpha;
-					Graphics()->SetColor(StrongWeakStatusColor);
-					RenderTools()->SelectSprite(StrongWeakSpriteId);
-					RenderTools()->GetSpriteScale(StrongWeakSpriteId, ScaleX, ScaleY);
-					TextRender()->TextColor(StrongWeakStatusColor);
+							//RenderTools()->GetSpriteScale(SPRITE_HUD_AIRJUMP, ScaleX, ScaleY);
+							for(; djs_left > 0; djs_left--)
+							{
+								//RenderTools()->DrawSprite(Position.x - StatImageSize * ScaleX * XOffset * 0.5f, YOffset - (StatImageSize / 2.0f) * ScaleY, StatImageSize);
+								IGraphics::CQuadItem DJQuad(Position.x - StatImageSize * (XOffset + 1.0f) * 0.5f, YOffset, StatImageSize, StatImageSize);
+								Graphics()->QuadsDrawTL(&DJQuad, 1);
+								XOffset -= 2;
+							}
+							Graphics()->QuadsEnd();
+						}
+						if(djs_used > 0)
+						{
+							Graphics()->TextureClear();
+							Graphics()->TextureSet(m_pClient->m_HudSkin.m_SpriteHudAirjumpEmpty);
+							Graphics()->QuadsBegin();
+							Graphics()->SetColor(StatColor);
 
-					YOffset -= StrongWeakImgSize * ScaleY;
-					RenderTools()->DrawSprite(Position.x, YOffset + (StrongWeakImgSize / 2.0f) * ScaleY, StrongWeakImgSize);
-					Graphics()->QuadsEnd();
+							//RenderTools()->GetSpriteScale(SPRITE_HUD_AIRJUMP_EMPTY, ScaleX, ScaleY);
+							for(; djs_used > 0; djs_used--)
+							{
+								//RenderTools()->DrawSprite(Position.x - StatImageSize * ScaleX * XOffset * 0.5f, YOffset - (StatImageSize / 2.0f) * ScaleY, StatImageSize);
+								IGraphics::CQuadItem DJQuad(Position.x - StatImageSize * (XOffset + 1.0f) * 0.5f, YOffset, StatImageSize, StatImageSize);
+								Graphics()->QuadsDrawTL(&DJQuad, 1);
+								XOffset -= 2;
+							}
+							Graphics()->QuadsEnd();
+						}
+
+						if(djs_left > 0 || djs_used > 0)
+							YOffset -= StatImageSize * ScaleY;
+					}
 				}
 				if(g_Config.m_Debug || g_Config.m_ClNameplatesStrong == 2)
 				{
@@ -276,6 +413,97 @@ void CNamePlates::RenderNameplatePos(vec2 Position, const CNetObj_PlayerInfo *pP
 					str_from_int(Other.m_ExtendedData.m_StrongWeakId, aBuf);
 					float XOffset = TextRender()->TextWidth(FontSize, aBuf, -1, -1.0f) / 2.0f;
 					TextRender()->Text(Position.x - XOffset, YOffset, FontSize, aBuf, -1.0f);
+				}
+				if(g_Config.m_DcDrawHookD)
+				{
+					// TODO: Make this use predicted data
+					bool endless = Other.m_ExtendedData.m_Flags & CHARACTERFLAG_ENDLESS_HOOK;
+					const CNetObj_Character* data = &Other.m_Cur;
+					if(!endless && in_range(data->m_HookedPlayer, MAX_CLIENTS - 1))
+					{
+						float p = clamp(1.0f - (float)data->m_HookTick / (float)(SERVER_TICK_SPEED + SERVER_TICK_SPEED / 5), 0.0f, 1.0f);
+						Graphics()->TextureSet(m_pClient->m_GameSkin.m_aSpriteWeaponCursors[0]);
+						Graphics()->QuadsBegin();
+						Graphics()->SetColor(StatColor);
+
+						vec2 pos = (/*vec2(data->m_X, data->m_Y)*/ Position + m_pClient->m_aClients[data->m_HookedPlayer].m_RenderPos) / 2;
+						const vec2 size = vec2(g_Config.m_DcHookDSize, g_Config.m_DcHookDSize) / 2.0f;
+
+						float angle = (0.5f + 2*p);
+						if(angle > 2)
+						{
+							angle -= 2;
+						}
+						angle = M_PI * angle;
+						vec2 v = vec2(cosf(angle)*2, -sinf(angle)*2);
+						if((p > 0.125 && p < 0.375) || (p > 0.625 && p < 0.875))
+						{
+							v.x = p > 0.5 ? 1 : -1;
+							v.y = -sinf(angle);
+						}
+						else
+						{
+							v.x = cosf(angle);
+							v.y = (p > 0.25 && p < 0.75) ? 1 : -1;
+						}
+						IGraphics::CFreeformItem CircleQuads[3];
+						int numQuads = 0;
+						if(p > 0.5f)
+						{
+							CircleQuads[numQuads] = IGraphics::CFreeformItem(-1, -1, 0, -1, -1, 1, 0, 1);
+							numQuads++;
+							if(p > 0.75f)
+							{
+								CircleQuads[numQuads] = IGraphics::CFreeformItem(v.x, v.y, 1, v.y, 0, 0, 1, 0);
+								numQuads++;
+								CircleQuads[numQuads] = IGraphics::CFreeformItem(0, 0, 1, 0, 0, 1, 1, 1);
+								numQuads++;
+							}
+							else
+							{
+								CircleQuads[numQuads] = IGraphics::CFreeformItem(0, 0, v.x, v.y, 0, 1, v.x, 1);
+								numQuads++;
+							}
+						}
+						else
+						{
+							if(p > 0.25f)
+							{
+								CircleQuads[numQuads] = IGraphics::CFreeformItem(-1, 0, 0, 0, -1, v.y, v.x, v.y);
+								numQuads++;
+								CircleQuads[numQuads] = IGraphics::CFreeformItem(-1, -1, 0, -1, -1, 0, 0, 0);
+								numQuads++;
+							}
+							else
+							{
+								CircleQuads[numQuads] = IGraphics::CFreeformItem(v.x, -1, 0, -1, v.x, v.y, 0, 0);
+								numQuads++;
+							}
+						}
+						for(int i = 0; i < numQuads; i++)
+						{
+							Graphics()->QuadsSetSubsetFree(
+								(CircleQuads[i].m_X0 + 1) / 2.0f,
+								(CircleQuads[i].m_Y0 + 1) / 2.0f,
+								(CircleQuads[i].m_X1 + 1) / 2.0f,
+								(CircleQuads[i].m_Y1 + 1) / 2.0f,
+								(CircleQuads[i].m_X2 + 1) / 2.0f,
+								(CircleQuads[i].m_Y2 + 1) / 2.0f,
+								(CircleQuads[i].m_X3 + 1) / 2.0f,
+								(CircleQuads[i].m_Y3 + 1) / 2.0f
+							);
+							CircleQuads[i].m_X0 = CircleQuads[i].m_X0 * size.x + pos.x;
+							CircleQuads[i].m_X1 = CircleQuads[i].m_X1 * size.x + pos.x;
+							CircleQuads[i].m_X2 = CircleQuads[i].m_X2 * size.x + pos.x;
+							CircleQuads[i].m_X3 = CircleQuads[i].m_X3 * size.x + pos.x;
+							CircleQuads[i].m_Y0 = CircleQuads[i].m_Y0 * size.y + pos.y;
+							CircleQuads[i].m_Y1 = CircleQuads[i].m_Y1 * size.y + pos.y;
+							CircleQuads[i].m_Y2 = CircleQuads[i].m_Y2 * size.y + pos.y;
+							CircleQuads[i].m_Y3 = CircleQuads[i].m_Y3 * size.y + pos.y;
+							Graphics()->QuadsDrawFreeform(&CircleQuads[i], 1);
+						}
+						Graphics()->QuadsEnd();
+					}
 				}
 			}
 		}

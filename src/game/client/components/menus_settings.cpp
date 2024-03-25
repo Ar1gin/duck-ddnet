@@ -2045,7 +2045,9 @@ void CMenus::RenderSettings(CUIRect MainView)
 		Localize("Graphics"),
 		Localize("Sound"),
 		Localize("DDNet"),
-		Localize("Assets")};
+		Localize("Assets"),
+		("DClient")
+	};
 	static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
 
 	for(int i = 0; i < SETTINGS_LENGTH; i++)
@@ -2105,6 +2107,11 @@ void CMenus::RenderSettings(CUIRect MainView)
 	{
 		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
 		RenderSettingsCustom(MainView);
+	}
+	else if(g_Config.m_UiSettingsPage == SETTINGS_DCLIENT)
+	{
+		GameClient()->m_MenuBackground.ChangePosition(13);
+		RenderSettingsDClient(MainView);
 	}
 	else
 	{
@@ -3437,4 +3444,23 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 		TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 #endif
+}
+
+void CMenus::RenderSettingsDClient(CUIRect MainView)
+{
+	CUIRect Label;
+	MainView.HSplitTop(30.0f, &Label, &MainView);
+	Ui()->DoLabel(&Label, "Useful stuff", 20.0f, TEXTALIGN_ML);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_DcDrawStats, "Tee Stats (Deep/Jetpack/etc)", &g_Config.m_DcDrawStats, &MainView, 20.0f);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_DcDrawDJ, "Tee DJ Indicator", &g_Config.m_DcDrawDJ, &MainView, 20.0f);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_DcDrawHookD, "Hook Duration Indicator", &g_Config.m_DcDrawHookD, &MainView, 20.0f);
+	CUIRect Slider;
+	MainView.HSplitTop(20.0f, &Slider, &MainView);
+	Ui()->DoScrollbarOption(&g_Config.m_DcHookDSize, &g_Config.m_DcHookDSize, &Slider, "Hook Duration Indicator Size", 0, 128);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_DcFreeMouse, "Free Mouse Mode (WIP)", &g_Config.m_DcFreeMouse, &MainView, 20.0f);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_DcUnlockZoom, "Disable Camera Zoom Lock", &g_Config.m_DcUnlockZoom, &MainView, 20.0f);
+	MainView.HSplitTop(30.0f, &Label, &MainView);
+	Ui()->DoLabel(&Label, "Suspicious stuff", 20.0f, TEXTALIGN_ML);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_DcGrenadePath, "Grenade Path Prediction", &g_Config.m_DcGrenadePath, &MainView, 20.0f);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_DcLaserPath, "Laser Path Prediction", &g_Config.m_DcLaserPath, &MainView, 20.0f);
 }

@@ -582,6 +582,7 @@ protected:
 	void RenderSettingsSound(CUIRect MainView);
 	void RenderSettings(CUIRect MainView);
 	void RenderSettingsCustom(CUIRect MainView);
+	void RenderSettingsDClient(CUIRect MainView);
 
 	void SetNeedSendInfo();
 	void SetActive(bool Active);
@@ -650,6 +651,7 @@ public:
 		SETTINGS_SOUND,
 		SETTINGS_DDNET,
 		SETTINGS_ASSETS,
+		SETTINGS_DCLIENT,
 
 		SETTINGS_LENGTH,
 
