@@ -101,7 +101,7 @@ void CCamera::OnRender()
 		m_Zoom = clamp(m_Zoom, MinZoomLevel(), MaxZoomLevel());
 	}
 
-	if(!ZoomAllowed())
+	if(!ZoomAllowed() && !g_Config.m_DcUnlockZoom)
 	{
 		m_ZoomSet = false;
 		m_Zoom = 1.0f;
