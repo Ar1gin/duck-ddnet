@@ -139,7 +139,7 @@ void CCamera::OnRender()
 		}
 	}
 
-	if(!ZoomAllowed())
+	if(!ZoomAllowed() && !g_Config.m_DcUnlockZoom)
 	{
 		m_ZoomSet = false;
 		m_Zoom = 1.0f;
