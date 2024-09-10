@@ -204,6 +204,70 @@ void CNamePlates::RenderNamePlate(CNamePlate &NamePlate, const CRenderNamePlateD
 			Graphics()->QuadsEnd();
 		}
 	}
+	if(Data.m_ShowJumps && (Data.m_JumpsLeft > 0 || Data.m_JumpsUsed > 0))
+	{
+		const float DJumpImgSize = Data.m_FontSizeJumps;
+		YOffset -= DJumpImgSize * 0.5f;
+		float X = Data.m_Position.x + (1.0f - Data.m_JumpsLeft - Data.m_JumpsUsed) * 0.5f * DJumpImgSize;
+		if(Data.m_JumpsLeft > 0)
+		{
+			Graphics()->TextureSet(m_pClient->m_HudSkin.m_SpriteHudAirjump);
+			Graphics()->QuadsBegin();
+			Graphics()->SetColor(1.0f, 1.0f, 1.0f, Data.m_Alpha);
+			for(int i = 0; i < Data.m_JumpsLeft; i++)
+			{
+				RenderTools()->DrawSprite(X, YOffset, DJumpImgSize, DJumpImgSize);
+				X += DJumpImgSize;
+			}
+			Graphics()->QuadsEnd();
+		}
+		if(Data.m_JumpsUsed > 0)
+		{
+			Graphics()->TextureSet(m_pClient->m_HudSkin.m_SpriteHudAirjumpEmpty);
+			Graphics()->QuadsBegin();
+			Graphics()->SetColor(1.0f, 1.0f, 1.0f, Data.m_Alpha);
+			for(int i = 0; i < Data.m_JumpsUsed; i++)
+			{
+				RenderTools()->DrawSprite(X, YOffset, DJumpImgSize, DJumpImgSize);
+				X += DJumpImgSize;
+			}
+			Graphics()->QuadsEnd();
+		}
+		YOffset -= DJumpImgSize * 0.5f;
+	}
+	if(Data.m_ShowFlags && Data.m_TrackedFlags != 0)
+	{
+		const float FlagImgSize = Data.m_FontSizeFlags;
+		YOffset -= FlagImgSize * 0.5f;
+		// Builtin functions are bad, but rolling my own is no better
+		float X = Data.m_Position.x + (1.0f - __builtin_popcount(Data.m_TrackedFlags)) * 0.5f * FlagImgSize;
+		const std::pair<int, IGraphics::CTextureHandle> FlagData[] = {
+			{CHARACTERFLAG_MOVEMENTS_DISABLED, m_pClient->m_HudSkin.m_SpriteHudLiveFrozen},
+			{CHARACTERFLAG_IN_FREEZE, m_pClient->m_HudSkin.m_SpriteHudDeepFrozen},
+			{CHARACTERFLAG_ENDLESS_HOOK, m_pClient->m_HudSkin.m_SpriteHudDeepFrozen},
+			{CHARACTERFLAG_ENDLESS_JUMP, m_pClient->m_HudSkin.m_SpriteHudEndlessJump},
+			{CHARACTERFLAG_JETPACK, m_pClient->m_HudSkin.m_SpriteHudJetpack},
+			{CHARACTERFLAG_HOOK_HIT_DISABLED, m_pClient->m_HudSkin.m_SpriteHudHookHitDisabled},
+			{CHARACTERFLAG_HAMMER_HIT_DISABLED, m_pClient->m_HudSkin.m_SpriteHudHammerHitDisabled},
+			{CHARACTERFLAG_COLLISION_DISABLED, m_pClient->m_HudSkin.m_SpriteHudCollisionDisabled},
+			{CHARACTERFLAG_TELEGUN_GUN, m_pClient->m_HudSkin.m_SpriteHudTeleportGun},
+			{CHARACTERFLAG_TELEGUN_LASER, m_pClient->m_HudSkin.m_SpriteHudTeleportLaser},
+			{CHARACTERFLAG_TELEGUN_GRENADE, m_pClient->m_HudSkin.m_SpriteHudTeleportGrenade},
+		};
+		for(const auto &Flag : FlagData) {
+			if((Data.m_TrackedFlags & Flag.first) == 0)
+				continue;
+
+			Graphics()->TextureSet(Flag.second);
+			Graphics()->QuadsBegin();
+			Graphics()->SetColor(1.0f, 1.0f, 1.0f, Data.m_Alpha);
+
+			RenderTools()->DrawSprite(X, YOffset, FlagImgSize, FlagImgSize);
+			Graphics()->QuadsEnd();
+			X += FlagImgSize;
+		}
+		YOffset -= FlagImgSize * 0.5f;
+	}
 
 	TextRender()->TextColor(TextRender()->DefaultTextColor());
 	TextRender()->TextOutlineColor(TextRender()->DefaultTextOutlineColor());
@@ -231,6 +295,9 @@ void CNamePlates::RenderNamePlateGame(vec2 Position, const CNetObj_PlayerInfo *p
 
 	Data.m_FontSizeHookWeakStrong = 18.0f + 20.0f * g_Config.m_ClNamePlatesStrongSize / 100.0f;
 	Data.m_FontSizeDirection = 18.0f + 20.0f * g_Config.m_ClDirectionSize / 100.0f;
+
+	Data.m_FontSizeFlags = 18.0f + 20.0f * g_Config.m_DcShowFlagsSize / 100.0f;
+	Data.m_FontSizeJumps = 18.0f + 20.0f * g_Config.m_DcShowJumpsSize / 100.0f;
 
 	Data.m_Alpha = Alpha;
 	if(!ForceAlpha)
@@ -315,15 +382,50 @@ void CNamePlates::RenderNamePlateGame(vec2 Position, const CNetObj_PlayerInfo *p
 	Data.m_HookWeakStrong = TRISTATE::SOME;
 	Data.m_ShowHookWeakStrongId = false;
 	Data.m_HookWeakStrongId = false;
-	if(Data.m_ShowHookWeakStrong)
+	Data.m_ShowFlags = g_Config.m_DcShowFlags && ShowNamePlate;
+	Data.m_ShowJumps = g_Config.m_DcShowDJ && ShowNamePlate;
+	if(Data.m_ShowHookWeakStrong || Data.m_ShowJumps || Data.m_ShowFlags)
 	{
 		const bool Following = (m_pClient->m_Snap.m_SpecInfo.m_Active && !GameClient()->m_MultiViewActivated && m_pClient->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW);
+		const CGameClient::CSnapState::CCharacterInfo &Other = m_pClient->m_Snap.m_aCharacters[pPlayerInfo->m_ClientId];
+		if(Data.m_ShowFlags && Other.m_HasExtendedData)
+		{
+			Data.m_TrackedFlags = Other.m_ExtendedData.m_Flags &
+				(
+					CHARACTERFLAG_MOVEMENTS_DISABLED |
+					CHARACTERFLAG_ENDLESS_HOOK |
+					CHARACTERFLAG_ENDLESS_JUMP |
+					CHARACTERFLAG_JETPACK |
+					CHARACTERFLAG_HOOK_HIT_DISABLED |
+					CHARACTERFLAG_HAMMER_HIT_DISABLED |
+					CHARACTERFLAG_COLLISION_DISABLED |
+					CHARACTERFLAG_TELEGUN_GUN |
+					CHARACTERFLAG_TELEGUN_LASER |
+					CHARACTERFLAG_TELEGUN_GRENADE
+				);
+			if(Other.m_ExtendedData.m_FreezeEnd == -1)
+			{
+				Data.m_TrackedFlags |= CHARACTERFLAG_IN_FREEZE;
+			}
+		}
+		else
+		{
+			Data.m_ShowFlags = false;
+		}
+		if(Data.m_ShowJumps && Other.m_HasExtendedData)
+		{
+			Data.m_JumpsUsed = clamp(Other.m_ExtendedData.m_JumpedTotal, 0, 5);
+			Data.m_JumpsLeft = clamp(Other.m_ExtendedData.m_Jumps - 1, 0, 5) - Data.m_JumpsUsed;
+		}
+		else
+		{
+			Data.m_ShowJumps = false;
+		}
 		if(m_pClient->m_Snap.m_LocalClientId != -1 || Following)
 		{
 			const int SelectedId = Following ? m_pClient->m_Snap.m_SpecInfo.m_SpectatorId : m_pClient->m_Snap.m_LocalClientId;
 			const CGameClient::CSnapState::CCharacterInfo &Selected = m_pClient->m_Snap.m_aCharacters[SelectedId];
-			const CGameClient::CSnapState::CCharacterInfo &Other = m_pClient->m_Snap.m_aCharacters[pPlayerInfo->m_ClientId];
-			if(Selected.m_HasExtendedData && Other.m_HasExtendedData)
+			if(Data.m_ShowHookWeakStrong && Selected.m_HasExtendedData && Other.m_HasExtendedData)
 			{
 				if(SelectedId != pPlayerInfo->m_ClientId)
 					Data.m_HookWeakStrong = Selected.m_ExtendedData.m_StrongWeakId > Other.m_ExtendedData.m_StrongWeakId ? TRISTATE::ALL : TRISTATE::NONE;
@@ -344,6 +446,9 @@ void CNamePlates::RenderNamePlatePreview(vec2 Position)
 
 	const float FontSizeDirection = 18.0f + 20.0f * g_Config.m_ClDirectionSize / 100.0f;
 	const float FontSizeHookWeakStrong = 18.0f + 20.0f * g_Config.m_ClNamePlatesStrongSize / 100.0f;
+
+	const float FontSizeFlags = 18.0f + 20.0f * g_Config.m_DcShowFlagsSize / 100.0f;
+	const float FontSizeJumps = 18.0f + 20.0f * g_Config.m_DcShowJumpsSize / 100.0f;
 
 	CRenderNamePlateData Data;
 
@@ -367,6 +472,14 @@ void CNamePlates::RenderNamePlatePreview(vec2 Position)
 	Data.m_ShowHookWeakStrongId = g_Config.m_ClNamePlatesStrong >= 2;
 	Data.m_HookWeakStrongId = 1;
 	Data.m_FontSizeHookWeakStrong = FontSizeHookWeakStrong;
+
+	Data.m_ShowFlags = true;
+	Data.m_TrackedFlags = CHARACTERFLAG_JETPACK | CHARACTERFLAG_ENDLESS_JUMP;
+	Data.m_FontSizeFlags = FontSizeFlags;
+	Data.m_ShowJumps = true;
+	Data.m_JumpsLeft = 3;
+	Data.m_JumpsUsed = 2;
+	Data.m_FontSizeJumps = FontSizeJumps;
 
 	CNamePlate NamePlate;
 	GameClient()->m_NamePlates.RenderNamePlate(NamePlate, Data);
