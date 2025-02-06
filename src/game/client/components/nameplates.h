@@ -130,6 +130,14 @@ class CNamePlates : public CComponent
 		bool m_ShowHookWeakStrongId;
 		int m_HookWeakStrongId;
 		float m_FontSizeHookWeakStrong;
+		// DClient
+		bool m_ShowFlags;
+		int m_TrackedFlags;
+		float m_FontSizeFlags;
+		bool m_ShowJumps;
+		int m_JumpsLeft;
+		int m_JumpsUsed;
+		float m_FontSizeJumps;
 	};
 	void RenderNamePlate(CNamePlate &NamePlate, const CRenderNamePlateData &Data);
 
