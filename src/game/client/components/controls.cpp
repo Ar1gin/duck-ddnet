@@ -423,11 +423,19 @@ void CControls::ClampMousePos()
 			m_aMousePos[g_Config.m_ClDummy].y = 0;
 			MouseDistance = 0.001f;
 		}
-		if(MouseDistance < MouseMin)
-			m_aMousePos[g_Config.m_ClDummy] = normalize_pre_length(m_aMousePos[g_Config.m_ClDummy], MouseDistance) * MouseMin;
-		MouseDistance = length(m_aMousePos[g_Config.m_ClDummy]);
-		if(MouseDistance > MouseMax)
-			m_aMousePos[g_Config.m_ClDummy] = normalize_pre_length(m_aMousePos[g_Config.m_ClDummy], MouseDistance) * MouseMax;
+		if(g_Config.m_DcFreeMouse) {
+			float factor = 2.0f / Graphics()->ScreenAspect();
+			m_aMousePos[g_Config.m_ClDummy].x = clamp(m_aMousePos[g_Config.m_ClDummy].x, -Ui()->Screen()->w / factor, Ui()->Screen()->w / factor);
+			m_aMousePos[g_Config.m_ClDummy].y = clamp(m_aMousePos[g_Config.m_ClDummy].y, -Ui()->Screen()->h / factor, Ui()->Screen()->h / factor);
+		}
+		else
+		{
+			if(MouseDistance < MouseMin)
+				m_aMousePos[g_Config.m_ClDummy] = normalize_pre_length(m_aMousePos[g_Config.m_ClDummy], MouseDistance) * MouseMin;
+			MouseDistance = length(m_aMousePos[g_Config.m_ClDummy]);
+			if(MouseDistance > MouseMax)
+				m_aMousePos[g_Config.m_ClDummy] = normalize_pre_length(m_aMousePos[g_Config.m_ClDummy], MouseDistance) * MouseMax;
+		}
 	}
 }
 
