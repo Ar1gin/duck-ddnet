@@ -616,6 +616,7 @@ protected:
 	void RenderSettingsSound(CUIRect MainView);
 	void RenderSettings(CUIRect MainView);
 	void RenderSettingsCustom(CUIRect MainView);
+	void RenderSettingsDClient(CUIRect MainView);
 
 	std::vector<CButtonContainer> vButtonsContainersJoystickAbsolute = {{}, {}};
 	std::vector<CButtonContainer> vButtonsContainersNamePlateShow = {{}, {}, {}, {}};
@@ -720,6 +721,7 @@ public:
 		SETTINGS_SOUND,
 		SETTINGS_DDNET,
 		SETTINGS_ASSETS,
+		SETTINGS_DCLIENT,
 
 		SETTINGS_LENGTH,
 
