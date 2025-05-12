@@ -2060,6 +2060,7 @@ set_src(ENGINE_SHARED GLOB_RECURSE src/engine/shared
   config.cpp
   config.h
   config_variables.h
+  config_variables_dclient.h
   console.cpp
   console.h
   csv.cpp
@@ -2356,6 +2357,8 @@ if(CLIENT)
     components/emoticon.h
     components/flow.cpp
     components/flow.h
+    components/fow.cpp
+    components/fow.h
     components/freezebars.cpp
     components/freezebars.h
     components/ghost.cpp
