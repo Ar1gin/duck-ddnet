@@ -98,6 +98,8 @@ target
 .settings
 .vs
 .vscode
+/.kdev4
+*.kdev4
 compile_commands.json
 cmake-build-*/*
 cscope.files

@@ -40,6 +40,14 @@ public:
 	bool m_ShowHookStrongWeakId;
 	int m_HookStrongWeakId;
 	float m_FontSizeHookStrongWeak;
+	// DClient
+	bool m_ShowFlags;
+	int m_TrackedFlags;
+	float m_FontSizeFlags;
+	bool m_ShowJumps;
+	int m_JumpsLeft;
+	int m_JumpsUsed;
+	float m_FontSizeJumps;
 };
 
 class CNamePlates : public CComponent
