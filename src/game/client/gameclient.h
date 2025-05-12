@@ -69,6 +69,8 @@
 #include "components/touch_controls.h"
 #include "components/voting.h"
 
+#include "components/fow.h"
+
 #include <memory>
 #include <vector>
 
@@ -190,6 +192,8 @@ public:
 	CTooltips m_Tooltips;
 
 	CLocalServer m_LocalServer;
+
+	CFOW m_FOW;
 
 private:
 	std::vector<class CComponent *> m_vpAll;
