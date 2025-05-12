@@ -1963,7 +1963,9 @@ void CMenus::RenderSettings(CUIRect MainView)
 		Localize("Graphics"),
 		Localize("Sound"),
 		Localize("DDNet"),
-		Localize("Assets")};
+		Localize("Assets"),
+		("DClient")
+	};
 	static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
 
 	for(int i = 0; i < SETTINGS_LENGTH; i++)
@@ -2026,6 +2028,11 @@ void CMenus::RenderSettings(CUIRect MainView)
 	{
 		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
 		RenderSettingsCustom(MainView);
+	}
+	else if(g_Config.m_UiSettingsPage == SETTINGS_DCLIENT)
+	{
+		GameClient()->m_MenuBackground.ChangePosition(13);
+		RenderSettingsDClient(MainView);
 	}
 	else
 	{
@@ -3555,4 +3562,33 @@ int CMenus::CPopupMapPickerContext::MapListFetchCallback(const CFsFileInfo *pInf
 	pRealUser->m_vMaps.emplace_back(Item);
 
 	return 0;
+}
+
+void CMenus::RenderSettingsDClient(CUIRect MainView)
+{
+	CUIRect Label;
+	MainView.HSplitTop(30.0f, &Label, &MainView);
+	Ui()->DoLabel(&Label, "Useful stuff", 20.0f, TEXTALIGN_ML);
+
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_DcShowFlags, "Tee stats (Deep/Jetpack/etc)", &g_Config.m_DcShowFlags, &MainView, 20.0f);
+	CUIRect Slider;
+	MainView.HSplitTop(40.0f, &Slider, &MainView);
+	Ui()->DoScrollbarOption(&g_Config.m_DcShowFlagsSize, &g_Config.m_DcShowFlagsSize, &Slider, "Size of tee stat indicators", -50, 100, &CUi::ms_LinearScrollbarScale, CUi::SCROLLBAR_OPTION_MULTILINE);
+
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_DcShowDJ, "Show remaining double jumps of a tee", &g_Config.m_DcShowDJ, &MainView, 20.0f);
+	MainView.HSplitTop(40.0f, &Slider, &MainView);
+	Ui()->DoScrollbarOption(&g_Config.m_DcShowJumpsSize, &g_Config.m_DcShowJumpsSize, &Slider, "Size of double jump indicators", -50, 100, &CUi::ms_LinearScrollbarScale, CUi::SCROLLBAR_OPTION_MULTILINE);
+
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_DcFreeMouse, "Free mouse mode (WIP)", &g_Config.m_DcFreeMouse, &MainView, 20.0f);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_DcUnlockZoom, "Disable camera zoom lock", &g_Config.m_DcUnlockZoom, &MainView, 20.0f);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_DcFogOfWar, "Fog of war", &g_Config.m_DcFogOfWar, &MainView, 20.0f);
+
+	static CButtonContainer s_FogOfWarColorResetId;
+	DoLine_ColorPicker(&s_FogOfWarColorResetId, 20.0f, 13.0f, 5.0f, &MainView, ("Fog Of War Color"), &g_Config.m_DcFogOfWarColor, ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f), false, nullptr, true);
+
+	MainView.HSplitTop(30.0f, &Label, &MainView);
+	Ui()->DoLabel(&Label, "Suspicious stuff", 20.0f, TEXTALIGN_ML);
+
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_DcGrenadePath, "Grenade path prediction", &g_Config.m_DcGrenadePath, &MainView, 20.0f);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_DcLaserPath, "Laser path prediction", &g_Config.m_DcLaserPath, &MainView, 20.0f);
 }

@@ -122,6 +122,7 @@ void CGameClient::OnConsoleInit()
 					      &m_Binds.m_SpecialBinds,
 					      &m_Controls,
 					      &m_Camera,
+					      &m_FOW,
 					      &m_Sounds,
 					      &m_Voting,
 					      &m_Particles, // doesn't render anything, just updates all the particles
@@ -129,18 +130,23 @@ void CGameClient::OnConsoleInit()
 					      &m_MapSounds,
 					      &m_Background, // render instead of m_MapLayersBackground when g_Config.m_ClOverlayEntities == 100
 					      &m_MapLayersBackground, // first to render
+					      &m_FOW.m_FOWEnable,
 					      &m_Particles.m_RenderTrail,
 					      &m_Particles.m_RenderTrailExtra,
 					      &m_Items,
 					      &m_Ghost,
 					      &m_Players,
+					      &m_FOW.m_FOWDisable,
 					      &m_MapLayersForeground,
+					      &m_FOW.m_FOWEnable,
 					      &m_Particles.m_RenderExplosions,
 					      &m_NamePlates,
 					      &m_Particles.m_RenderExtra,
 					      &m_Particles.m_RenderGeneral,
 					      &m_FreezeBars,
 					      &m_DamageInd,
+					      &m_FOW.m_FOWDisable,
+					      &m_FOW.m_FOWShadow,
 					      &m_Hud,
 					      &m_Spectator,
 					      &m_Emoticon,
@@ -2117,9 +2123,10 @@ void CGameClient::OnNewSnapshot()
 		m_aShowOthers[g_Config.m_ClDummy] = g_Config.m_ClShowOthers;
 	}
 
-	float ShowDistanceZoom = m_Camera.m_Zoom;
-	float Zoom = m_Camera.m_Zoom;
-	if(m_Camera.m_Zooming)
+	float ShowDistanceZoom = m_FOW.m_Enabled ? 1.0f : m_Camera.m_Zoom;
+	float Zoom = m_FOW.m_Enabled ? 1.0f : m_Camera.m_Zoom;
+
+	if(m_Camera.m_Zooming && !m_FOW.m_Enabled)
 	{
 		if(m_Camera.m_ZoomSmoothingTarget > m_Camera.m_Zoom) // Zooming out
 			ShowDistanceZoom = m_Camera.m_ZoomSmoothingTarget;

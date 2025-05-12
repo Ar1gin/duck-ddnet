@@ -16,6 +16,8 @@ class CMapBugs;
 
 class CGameWorld
 {
+	friend class CPlayers; // DClient prediction
+
 public:
 	enum
 	{
