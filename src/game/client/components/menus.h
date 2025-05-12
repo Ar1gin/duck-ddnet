@@ -554,6 +554,7 @@ protected:
 	void RenderSettingsSound(CUIRect MainView);
 	void RenderSettings(CUIRect MainView);
 	void RenderSettingsCustom(CUIRect MainView);
+	void RenderSettingsDClient(CUIRect MainView);
 
 	// found in menus_settings_controls.cpp
 	// TODO: Change PopupConfirm to avoid using a function pointer to a CMenus
@@ -658,6 +659,7 @@ public:
 		SETTINGS_SOUND,
 		SETTINGS_DDNET,
 		SETTINGS_ASSETS,
+		SETTINGS_DCLIENT,
 
 		SETTINGS_LENGTH,
 	};
