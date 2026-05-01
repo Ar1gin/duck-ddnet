@@ -8,6 +8,7 @@ Feel free to copy these features in your own client
 # Showcase
 ![Screenshot_20231104_182112](https://github.com/Ar1gin/duck-ddnet/assets/79476345/eb4d5f79-50cf-48c9-a149-18fec4d9a1f1)
 ![Screenshot_20231104_182230](https://github.com/Ar1gin/duck-ddnet/assets/79476345/12618c7e-cf26-4e0a-a41c-08820efb596e)
+![Screenshot_20250523_225230](https://github.com/user-attachments/assets/a421b1f4-d231-4a39-af69-c1648971df53)
 
 # Features
 ```
@@ -15,4 +16,6 @@ dc_drawstats
 dc_drawdj
 dc_freemouse
 dc_unlockzoom
+dc_fow
+dc_fow_color
 ```
